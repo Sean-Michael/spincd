@@ -15,7 +15,7 @@ class AlbumForm(BaseModel):
     label: str | None = None
 
 
-class AlbumModel(SQLModel, table=True):
+class AlbumTable(SQLModel, table=True):
     """Database Table model for Albums"""
     id: int | None = Field(default=None, primary_key=True)
     title: str
@@ -53,18 +53,26 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 @app.post("/albums")
-async def create_album(album: Annotated[AlbumForm, Form()]):
-    """Create a new Album record"""
+async def create_album(album: Annotated[AlbumTable, Form()], session: SessionDep) -> AlbumTable:
+    """Create a new Album record in DB"""
+    session.add(album)
+    session.commit()
+    session.refresh(album)
     return album
 
 
 @app.get("/albums")
-async def get_albums():
-    return
+async def read_albums(
+    session: SessionDep, 
+    offset: int = 0, 
+    limit: Annotated[int, Query(le=100)] = 100,
+) ->list[AlbumTable]:
+    albums = session.exec(select(AlbumTable).offset(offset).limit(limit)).all()
+    return albums
 
 
 @app.get("/albums/{album_id}")
-async def get_album_by_id(album_id):
+async def read_album_by_id(album_id):
     return
 
 
