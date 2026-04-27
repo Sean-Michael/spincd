@@ -1,11 +1,13 @@
 from typing import Annotated
 
-from fastapi import FastAPI, Form
+from fastapi import FastAPI, Form, Depends, HTTPException, Query
 from pydantic import BaseModel
+from sqlmodel import Field, Session, SQLModel, create_engine, select
+from contextlib import asynccontextmanager
 
-app = FastAPI()
 
 class AlbumForm(BaseModel):
+    """Form input model for Albums"""
     title: str
     artist: str
     release_year: int | None = None
@@ -13,8 +15,46 @@ class AlbumForm(BaseModel):
     label: str | None = None
 
 
+class AlbumModel(SQLModel, table=True):
+    """Database Table model for Albums"""
+    id: int | None = Field(default=None, primary_key=True)
+    title: str
+    artist: str = Field(index=True)  # Create an index for fast Artist lookups
+    release_year: int | None
+    genre: str | None
+    label: str | None
+
+
+# Initialize the SQLModel Database Engine
+sqlite_file_name = "spincd.db"
+sqlite_url = f"sqlite:///{sqlite_file_name}"
+
+connect_args = {"check_same_thread": False} # Allows db access across threads
+engine = create_engine(sqlite_url, connect_args=connect_args)
+
+def create_db_and_tables():
+    """# Create the tables for all table SQLModel models"""
+    SQLModel.metadata.create_all(engine)
+
+
+def get_session():
+    """Creates a Session instance for storing objects in memory"""
+    with Session(engine) as session:
+        yield session
+
+SessionDep = Annotated[Session, Depends(get_session)]
+
+async def lifespan(app: FastAPI):
+    """Handle startup and shutdown dependencies and lifecycle of FastAPI app"""
+    create_db_and_tables()
+    yield
+
+# Initialize the FastAPI application
+app = FastAPI(lifespan=lifespan)
+
 @app.post("/albums")
 async def create_album(album: Annotated[AlbumForm, Form()]):
+    """Create a new Album record"""
     return album
 
 
