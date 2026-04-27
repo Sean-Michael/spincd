@@ -1,4 +1,6 @@
-from fastapi import FastAPI
+from typing import Annotated
+
+from fastapi import FastAPI, Form
 from pydantic import BaseModel
 
 app = FastAPI()
@@ -12,7 +14,7 @@ class AlbumForm(BaseModel):
 
 
 @app.post("/albums")
-async def create_album(album: AlbumForm):
+async def create_album(album: Annotated[AlbumForm, Form()]):
     return album
 
 
