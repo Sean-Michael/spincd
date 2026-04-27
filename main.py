@@ -1,10 +1,19 @@
 from fastapi import FastAPI
+from pydantic import BaseModel
 
 app = FastAPI()
 
+class AlbumForm(BaseModel):
+    title: str
+    artist: str
+    release_year: int | None = None
+    genre: str | None = None
+    label: str | None = None
+
+
 @app.post("/albums")
-async def create_album():
-    return
+async def create_album(album: AlbumForm):
+    return album
 
 
 @app.get("/albums")
