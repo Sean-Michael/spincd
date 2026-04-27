@@ -1,4 +1,4 @@
 notes/
 __pycache__
 .venv
-*.db
+spincd.db
