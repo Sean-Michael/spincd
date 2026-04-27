@@ -94,5 +94,10 @@ async def update_album_by_id(album_id):
 
 
 @app.delete("/albums/{album_id}")
-async def delete_album_by_id(album_id):
-    return
+async def delete_album_by_id(album_id, session: SessionDep):
+    album = session.get(AlbumTable, album_id)
+    if not album:
+        raise HTTPException(status_code=404, detail="Album not found")
+    session.delete(album)
+    session.commit()
+    return {"ok": True}
