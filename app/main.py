@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from sqlmodel import SQLModel, Session
+from sqlmodel import SQLModel
 from sqlalchemy import Engine
 from contextlib import asynccontextmanager
 import logging
