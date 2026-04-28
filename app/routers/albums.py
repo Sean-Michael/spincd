@@ -1,11 +1,18 @@
 from sqlmodel import select
 from typing import Annotated
 from fastapi import Query, HTTPException, APIRouter
+from sqlmodel import Session
 
 # Local modules
 from ..models.albums import Album, AlbumPublic, AlbumCreate, AlbumUpdate
 from ..dependencies import SessionDep
-from ..main import acr
+
+
+def acr(data, session: Session):
+    """Helper to DRY up add commit refresh"""
+    session.add(data)
+    session.commit()
+    session.refresh(data)
 
 
 router = APIRouter(prefix="/albums", tags=["albums"])

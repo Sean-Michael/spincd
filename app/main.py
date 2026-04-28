@@ -10,13 +10,6 @@ from .database import get_engine
 from .routers import albums
 
 
-def acr(data, session: Session):
-    """Helper to DRY up add commit refresh"""
-    session.add(data)
-    session.commit()
-    session.refresh(data)
-
-
 def init_logger(settings: Settings):
     """Initialize logger with handlers"""
     # Logging to stdout
