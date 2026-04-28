@@ -45,16 +45,17 @@ class AlbumUpdate(SQLModel):
     label: str | None = None
 
 
-# Logging Setup
 @lru_cache
-def get_settings():
+def get_settings() -> Settings:
+    """Helper to grab settings and cache the result"""
     return Settings()
 
 
+# Type alias for dependency injection
 SettingsDep = Annotated[Settings, Depends(get_settings)]
 
 
-def init_logger(settings: SettingsDep):
+def init_logger(settings: Settings):
     """Initialize logger with handlers"""
     # Logging to stdout
     console_handler = logging.StreamHandler()
@@ -71,7 +72,7 @@ def create_db_and_tables(settings: Settings):
     logging.info("Created db and tables...")
 
 
-def get_session(settings: Settings):
+def get_session(settings: SettingsDep):
     """Creates a Session instance for storing objects in memory"""
     with Session(settings.engine) as session:
         yield session
