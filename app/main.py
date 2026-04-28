@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import SQLModel
 from sqlalchemy import Engine
 from contextlib import asynccontextmanager
@@ -38,6 +39,16 @@ async def lifespan(app: FastAPI):
 
 # Initialize the FastAPI application
 app = FastAPI(lifespan=lifespan)
+
+settings = get_settings()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.allow_origins,
+    allow_credentials=True,
+    allow_methods=settings.allow_methods,
+    allow_headers=settings.allow_headers,
+)
 
 # /albums
 app.include_router(albums.router)
