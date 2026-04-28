@@ -1,10 +1,12 @@
 from typing import Annotated
-from fastapi import FastAPI, Form, Depends, HTTPException, Query
+from fastapi import FastAPI, Depends, HTTPException, Query
 from sqlmodel import Field, Session, SQLModel, select
 from contextlib import asynccontextmanager
 import logging
 from .config import Settings
 from functools import lru_cache
+from sqlmodel import create_engine
+from sqlalchemy import Engine
 
 
 class AlbumBase(SQLModel):
@@ -61,20 +63,29 @@ def init_logger(settings: Settings):
     console_handler = logging.StreamHandler()
     console_handler.setLevel(settings.log_level)
     console_handler.setFormatter(logging.Formatter(settings.console_format))
-
     logging.basicConfig(level=logging.DEBUG, handlers=[console_handler])
     logging.info("Setup logging handler(s)...")
 
 
-def create_db_and_tables(settings: Settings):
+@lru_cache
+def get_engine() -> Engine:
+    """Helper to get engine as cached dependency provider"""
+    settings = get_settings()
+    return create_engine(settings.sqlite_url, connect_args=settings.connect_args)
+
+
+EngineDep = Annotated[Engine, Depends(get_engine)]
+
+
+def create_db_and_tables(engine: Engine):
     """# Create the tables for all table SQLModel models"""
-    SQLModel.metadata.create_all(settings.engine)
+    SQLModel.metadata.create_all(engine)
     logging.info("Created db and tables...")
 
 
-def get_session(settings: SettingsDep):
+def get_session(engine: EngineDep):
     """Creates a Session instance for storing objects in memory"""
-    with Session(settings.engine) as session:
+    with Session(engine) as session:
         yield session
 
 
@@ -85,9 +96,8 @@ SessionDep = Annotated[Session, Depends(get_session)]
 async def lifespan(app: FastAPI):
     """Handle startup and shutdown dependencies and lifecycle of FastAPI app"""
     # Startup
-    settings = get_settings()
-    init_logger(settings)
-    create_db_and_tables(settings)
+    init_logger(get_settings())
+    create_db_and_tables(get_engine())
     yield
     # Shutdown
 
@@ -96,23 +106,23 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 
-async def acr(column, session: SessionDep):
+def acr(data, session: SessionDep):
     """Helper to DRY up add commit refresh"""
     try:
-        session.add(column)
+        session.add(data)
         session.commit()
-        session.refresh(column)
+        session.refresh(data)
         return
     except Exception as e:
-        print(e)
+        logging.exception(e)
         raise
 
 
 @app.post("/albums", response_model=AlbumPublic)
-async def create_album(album: Annotated[AlbumCreate, Form()], session: SessionDep):
+async def create_album(album: AlbumCreate, session: SessionDep):
     """Create a new Album record in DB"""
     db_album = Album.model_validate(album)
-    await acr(db_album, session)
+    acr(db_album, session)
     return db_album
 
 
@@ -137,15 +147,13 @@ async def read_album_by_id(album_id: int, session: SessionDep):
 
 
 @app.put("/albums/{album_id}", response_model=AlbumPublic)
-async def replace_album_by_id(
-    album_id: int, album: Annotated[AlbumCreate, Form()], session: SessionDep
-):
+async def replace_album_by_id(album_id: int, album: AlbumCreate, session: SessionDep):
     """Idempotent update of an entire Album in place"""
     album_db = session.get(Album, album_id)
     if not album_db:
         raise HTTPException(status_code=404, detail="Album not found")
     album_db.sqlmodel_update(album)
-    await acr(album_db, session)
+    acr(album_db, session)
     return album_db
 
 
@@ -157,7 +165,7 @@ async def update_album_by_id(album_id: int, album: AlbumUpdate, session: Session
         raise HTTPException(status_code=404, detail="Album not found")
     album_data = album.model_dump(exclude_unset=True)
     album_db.sqlmodel_update(album_data)
-    await acr(album_db, session)
+    acr(album_db, session)
     return album_db
 
 
