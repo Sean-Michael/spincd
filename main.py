@@ -98,19 +98,19 @@ async def create_album(album: Annotated[AlbumCreate, Form()], session: SessionDe
     return db_album
 
 
-@app.get("/albums")
+@app.get("/albums", response_model=list[AlbumPublic])
 async def read_albums(
     session: SessionDep,
     offset: int = 0,
     limit: Annotated[int, Query(le=100)] = 100,
-) -> list[AlbumPublic]:
+):
     """Read all the albums in the collection"""
     albums = session.exec(select(Album).offset(offset).limit(limit)).all()
     return albums
 
 
-@app.get("/albums/{album_id}")
-async def read_album_by_id(album_id: int, session: SessionDep) -> AlbumPublic:
+@app.get("/albums/{album_id}", response_model=AlbumPublic)
+async def read_album_by_id(album_id: int, session: SessionDep):
     """Read a single album by id"""
     album = session.get(Album, album_id)
     if not album:
@@ -118,12 +118,20 @@ async def read_album_by_id(album_id: int, session: SessionDep) -> AlbumPublic:
     return album
 
 
-@app.put("/albums/{album_id}")
-async def replace_album_by_id(album_id: int):
-    return
+@app.put("/albums/{album_id}", response_model=AlbumPublic)
+async def replace_album_by_id(
+    album_id: int, album: Annotated[AlbumCreate, Form()], session: SessionDep
+):
+    """Idempotent update of an entire Album in place"""
+    album_db = session.get(Album, album_id)
+    if not album_db:
+        raise HTTPException(status_code=404, detail="Album not found")
+    album_db.sqlmodel_update(album)
+    await acr(album_db, session)
+    return album_db
 
 
-@app.patch("/albums/{album_id}")
+@app.patch("/albums/{album_id}", response_model=AlbumPublic)
 async def update_album_by_id(album_id: int, album: AlbumUpdate, session: SessionDep):
     """Update specific Album fields"""
     album_db = session.get(Album, album_id)
