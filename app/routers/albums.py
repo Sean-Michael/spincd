@@ -5,7 +5,7 @@ from fastapi import Query, HTTPException, APIRouter
 # Local modules
 from ..models.albums import Album, AlbumPublic, AlbumCreate, AlbumUpdate
 from ..dependencies import SessionDep
-from ..database import acr
+from ..main import acr
 
 
 router = APIRouter(prefix="/albums", tags=["albums"])

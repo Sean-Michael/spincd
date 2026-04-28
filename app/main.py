@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from sqlmodel import SQLModel
+from sqlmodel import SQLModel, Session
 from sqlalchemy import Engine
 from contextlib import asynccontextmanager
 import logging
@@ -8,6 +8,13 @@ import logging
 from .config import Settings, get_settings
 from .database import get_engine
 from .routers import albums
+
+
+def acr(data, session: Session):
+    """Helper to DRY up add commit refresh"""
+    session.add(data)
+    session.commit()
+    session.refresh(data)
 
 
 def init_logger(settings: Settings):
