@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings
+from functools import lru_cache
 
 
 class Settings(BaseSettings):
@@ -10,5 +11,10 @@ class Settings(BaseSettings):
 
     # DATABASE
     sqlite_file_name: str = "spincd.db"
-    sqlite_url: str = f"sqlite:///{sqlite_file_name}"
-    connect_args: dict = {"check_same_thread": False}  # Allows db access across threads
+    database_url: str | None = None
+
+
+@lru_cache
+def get_settings() -> Settings:
+    """Helper to grab settings and cache the result"""
+    return Settings()
