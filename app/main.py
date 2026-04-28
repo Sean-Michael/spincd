@@ -1,18 +1,20 @@
 from typing import Annotated
-
 from fastapi import FastAPI, Form, Depends, HTTPException, Query
-from sqlmodel import Field, Session, SQLModel, create_engine, select
+from sqlmodel import Field, Session, SQLModel, select
 from contextlib import asynccontextmanager
+import logging
+from .config import Settings
+from functools import lru_cache
 
 
 class AlbumBase(SQLModel):
-    """Base model for Albums with shared fields"""
+    """Base model for Albums with required and optional shared fields"""
 
     title: str
     artist: str = Field(index=True)  # Create an index for fast Artist lookups
-    release_year: int | None
-    genre: str | None
-    label: str | None
+    release_year: int | None = None
+    genre: str | None = None
+    label: str | None = None
 
 
 class Album(AlbumBase, table=True):
@@ -33,32 +35,45 @@ class AlbumCreate(AlbumBase):
     pass
 
 
-class AlbumUpdate(AlbumBase):
-    """Provide all the fields of AlbumBase with defaults so they can be updated"""
+class AlbumUpdate(SQLModel):
+    """Provide all the optional fields so they can be updated"""
 
     title: str | None = None
     artist: str | None = None
     release_year: int | None = None
-    genre: str | None
-    label: str | None
+    genre: str | None = None
+    label: str | None = None
 
 
-# Initialize the SQLModel Database Engine
-sqlite_file_name = "spincd.db"
-sqlite_url = f"sqlite:///{sqlite_file_name}"
-
-connect_args = {"check_same_thread": False}  # Allows db access across threads
-engine = create_engine(sqlite_url, connect_args=connect_args)
+# Logging Setup
+@lru_cache
+def get_settings():
+    return Settings()
 
 
-def create_db_and_tables():
+SettingsDep = Annotated[Settings, Depends(get_settings)]
+
+
+def init_logger(settings: SettingsDep):
+    """Initialize logger with handlers"""
+    # Logging to stdout
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(settings.log_level)
+    console_handler.setFormatter(logging.Formatter(settings.console_format))
+
+    logging.basicConfig(level=logging.DEBUG, handlers=[console_handler])
+    logging.info("Setup logging handler(s)...")
+
+
+def create_db_and_tables(settings: Settings):
     """# Create the tables for all table SQLModel models"""
-    SQLModel.metadata.create_all(engine)
+    SQLModel.metadata.create_all(settings.engine)
+    logging.info("Created db and tables...")
 
 
-def get_session():
+def get_session(settings: Settings):
     """Creates a Session instance for storing objects in memory"""
-    with Session(engine) as session:
+    with Session(settings.engine) as session:
         yield session
 
 
@@ -69,7 +84,9 @@ SessionDep = Annotated[Session, Depends(get_session)]
 async def lifespan(app: FastAPI):
     """Handle startup and shutdown dependencies and lifecycle of FastAPI app"""
     # Startup
-    create_db_and_tables()
+    settings = get_settings()
+    init_logger(settings)
+    create_db_and_tables(settings)
     yield
     # Shutdown
 
