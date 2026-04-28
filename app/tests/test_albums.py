@@ -156,3 +156,60 @@ def test_replace_album_by_id_not_found(client: TestClient):
     data = response.json()
     assert response.status_code == 404
     assert data["detail"] == "Album not found"
+
+
+def test_update_album_by_id(session: Session, client: TestClient):
+    """Patching an album should update only the fields provided"""
+    album = Album(
+        title="Sgt. Pepper's",
+        artist="The Beatles",
+        release_year=1967,
+        genre="Rock",
+        label="Parlophone",
+    )
+    session.add(album)
+    session.commit()
+
+    response = client.patch(
+        f"/albums/{album.id}",
+        json={"genre": "Psychedelic Rock"},
+    )
+    data = response.json()
+    assert response.status_code == 200
+    assert data["genre"] == "Psychedelic Rock"
+    # Untouched fields should be unchanged
+    assert data["title"] == "Sgt. Pepper's"
+    assert data["artist"] == "The Beatles"
+    assert data["release_year"] == 1967
+    assert data["label"] == "Parlophone"
+    assert data["id"] == album.id
+
+
+def test_update_album_by_id_not_found(client: TestClient):
+    """Patching an album that doesn't exist should return a 404"""
+    response = client.patch("/albums/69", json={"genre": "Jazz"})
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Album not found"}
+
+
+def test_delete_album_by_id(session: Session, client: TestClient):
+    """Deleting an album should remove it from the DB"""
+    album = Album(title="OK Computer", artist="Radiohead")
+    session.add(album)
+    session.commit()
+    album_id = album.id
+
+    response = client.delete(f"/albums/{album_id}")
+    assert response.status_code == 200
+    assert response.json() == {"ok": True}
+
+    # A subsequent GET should now 404
+    follow_up = client.get(f"/albums/{album_id}")
+    assert follow_up.status_code == 404
+
+
+def test_delete_album_by_id_not_found(client: TestClient):
+    """Deleting an album that doesn't exist should return a 404"""
+    response = client.delete("/albums/69")
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Album not found"}
