@@ -78,15 +78,24 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 
-@app.post("/albums")
-async def create_album(
-    album: Annotated[AlbumCreate, Form()], session: SessionDep
-) -> AlbumPublic:
+async def acr(column, session: SessionDep):
+    """Helper to DRY up add commit refresh"""
+    try:
+        session.add(column)
+        session.commit()
+        session.refresh(column)
+        return
+    except Exception as e:
+        print(e)
+        raise
+
+
+@app.post("/albums", response_model=AlbumPublic)
+async def create_album(album: Annotated[AlbumCreate, Form()], session: SessionDep):
     """Create a new Album record in DB"""
-    session.add(album)
-    session.commit()
-    session.refresh(album)
-    return album
+    db_album = Album.model_validate(album)
+    await acr(db_album, session)
+    return db_album
 
 
 @app.get("/albums")
@@ -122,9 +131,7 @@ async def update_album_by_id(album_id: int, album: AlbumUpdate, session: Session
         raise HTTPException(status_code=404, detail="Album not found")
     album_data = album.model_dump(exclude_unset=True)
     album_db.sqlmodel_update(album_data)
-    session.add(album_db)
-    session.commit()
-    session.refresh(album_db)
+    await acr(album_db, session)
     return album_db
 
 
