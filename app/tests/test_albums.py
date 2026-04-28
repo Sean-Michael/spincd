@@ -139,3 +139,20 @@ def test_replace_album_by_id(session: Session, client: TestClient):
     assert data["release_year"] == 1989
     assert data["genre"] == "Grunge"
     assert data["label"] == "Sub Pop"
+
+
+def test_replace_album_by_id_not_found(client: TestClient):
+    """Attempting to patch an album that doesn't exist should return a 404"""
+    response = client.put(
+        "/albums/69",
+        json={
+            "title": "Bleach",
+            "artist": "Nirvana",
+            "release_year": 1989,
+            "genre": "Grunge",
+            "label": "Sub Pop",
+        },
+    )
+    data = response.json()
+    assert response.status_code == 404
+    assert data["detail"] == "Album not found"
