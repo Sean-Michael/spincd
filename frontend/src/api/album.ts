@@ -1,4 +1,4 @@
-import type { Album, AlbumCreate, AlbumUpdate } from "../types";
+import type { Album, AlbumCreate, AlbumUpdate } from "../types/album";
 
 const BASE_URL = 'http://localhost:8000';
 
