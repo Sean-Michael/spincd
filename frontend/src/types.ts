@@ -8,7 +8,7 @@ export interface Album {
 }
 
 export interface AlbumCreate {
-    /* title and artist are required */
+    // title and artist are required
     title: string;
     artist: string;
     release_year?: number | null;
@@ -17,7 +17,7 @@ export interface AlbumCreate {
 }
 
 export interface AlbumUpdate {
-    /* All fields are optional */
+    // All fields are optional
     title?: string | null;
     artist?: string | null;
     release_year?: number | null;
