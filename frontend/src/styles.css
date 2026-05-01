@@ -554,6 +554,14 @@ html, body {
   padding: 14px 18px;
 }
 .list-row.head:hover { background: transparent; }
+.list-row.head .sortable {
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.12s;
+}
+.list-row.head .sortable:hover { color: var(--ink-1); }
+.list-row.head .sortable.active { color: var(--accent); }
+.list-row.head .sort-arrow { font-size: 9px; }
 .list-row .lr-cover {
   width: 44px; height: 44px;
   border-radius: 3px;

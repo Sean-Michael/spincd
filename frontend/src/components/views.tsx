@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Album } from "../types/album";
 import { CoverArt } from "./CoverArt";
 
@@ -140,19 +140,79 @@ export function GridView({ cds, onOpen }: ViewProps) {
   );
 }
 
+type SortKey = "title" | "artist" | "release_year" | "genre" | "rating";
+type SortDir = "asc" | "desc";
+
+function compare(a: Album, b: Album, key: SortKey): number {
+  if (key === "title" || key === "artist") {
+    return a[key].localeCompare(b[key]);
+  }
+  if (key === "genre") {
+    const av = a.genre[0] ?? "";
+    const bv = b.genre[0] ?? "";
+    return av.localeCompare(bv);
+  }
+  // numeric: release_year or rating, with nulls always last
+  const av = a[key];
+  const bv = b[key];
+  if (av == null && bv == null) return 0;
+  if (av == null) return 1;
+  if (bv == null) return -1;
+  return av - bv;
+}
+
 export function ListView({ cds, onOpen }: ViewProps) {
+  const [sort, setSort] = useState<{ key: SortKey; dir: SortDir } | null>(null);
+
+  const sorted = useMemo(() => {
+    if (!sort) return cds;
+    const arr = [...cds];
+    arr.sort((a, b) => compare(a, b, sort.key));
+    if (sort.dir === "desc") {
+      // Reverse but keep nulls last for numeric columns
+      if (sort.key === "release_year" || sort.key === "rating") {
+        const nulls = arr.filter(c => c[sort.key] == null);
+        const nonNulls = arr.filter(c => c[sort.key] != null).reverse();
+        return [...nonNulls, ...nulls];
+      }
+      arr.reverse();
+    }
+    return arr;
+  }, [cds, sort]);
+
+  const onHeaderClick = (key: SortKey) => {
+    setSort(prev => {
+      if (prev?.key !== key) return { key, dir: "asc" };
+      if (prev.dir === "asc") return { key, dir: "desc" };
+      return null;
+    });
+  };
+
+  const arrow = (key: SortKey) =>
+    sort?.key === key ? (sort.dir === "asc" ? " ▲" : " ▼") : "";
+
+  const sortable = (key: SortKey, label: string) => (
+    <span
+      className={"sortable" + (sort?.key === key ? " active" : "")}
+      onClick={() => onHeaderClick(key)}
+    >
+      {label}
+      <span className="sort-arrow">{arrow(key)}</span>
+    </span>
+  );
+
   return (
     <div className="list-view glass">
       <div className="list-row head">
         <span></span>
-        <span>Title</span>
-        <span>Artist</span>
-        <span>Year</span>
-        <span>Genre</span>
-        <span>Rating</span>
+        {sortable("title", "Title")}
+        {sortable("artist", "Artist")}
+        {sortable("release_year", "Year")}
+        {sortable("genre", "Genre")}
+        {sortable("rating", "Rating")}
         <span></span>
       </div>
-      {cds.map(cd => {
+      {sorted.map(cd => {
         const rating = cd.rating ?? 0;
         return (
           <div key={cd.id} className="list-row" onClick={() => onOpen(cd)}>
