@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import type { CD } from "../types/cd";
+import type { Album } from "../types/album";
 import { CoverArt } from "./CoverArt";
 
 interface ViewProps {
-  cds: CD[];
-  onOpen: (cd: CD) => void;
+  cds: Album[];
+  onOpen: (cd: Album) => void;
 }
 
 interface CarouselProps extends ViewProps {
@@ -98,7 +98,8 @@ export function Carousel({ cds, index, setIndex, onOpen }: CarouselProps) {
               <div className="card-meta">
                 <div className="meta-title">{cd.title}</div>
                 <div className="meta-artist">
-                  {cd.artist} · {cd.year}
+                  {cd.artist}
+                  {cd.release_year != null ? ` · ${cd.release_year}` : ""}
                 </div>
               </div>
             </div>
@@ -129,7 +130,8 @@ export function GridView({ cds, onOpen }: ViewProps) {
           <div className="gc-meta">
             <div className="gc-title">{cd.title}</div>
             <div className="gc-artist">
-              {cd.artist} · {cd.year}
+              {cd.artist}
+              {cd.release_year != null ? ` · ${cd.release_year}` : ""}
             </div>
           </div>
         </div>
@@ -150,24 +152,27 @@ export function ListView({ cds, onOpen }: ViewProps) {
         <span>Rating</span>
         <span></span>
       </div>
-      {cds.map(cd => (
-        <div key={cd.id} className="list-row" onClick={() => onOpen(cd)}>
-          <div className="lr-cover">
-            <CoverArt cd={cd} face="front" />
+      {cds.map(cd => {
+        const rating = cd.rating ?? 0;
+        return (
+          <div key={cd.id} className="list-row" onClick={() => onOpen(cd)}>
+            <div className="lr-cover">
+              <CoverArt cd={cd} face="front" />
+            </div>
+            <div className="lr-title">{cd.title}</div>
+            <div className="lr-artist">{cd.artist}</div>
+            <div className="lr-year">{cd.release_year ?? "—"}</div>
+            <div className="lr-genre">{cd.genre.join(" · ")}</div>
+            <div className="lr-rating">
+              {"★".repeat(rating)}
+              <span style={{ color: "var(--ink-4)", opacity: 0.4 }}>{"★".repeat(5 - rating)}</span>
+            </div>
+            <div className="lr-arrow" style={{ color: "var(--ink-3)" }}>
+              →
+            </div>
           </div>
-          <div className="lr-title">{cd.title}</div>
-          <div className="lr-artist">{cd.artist}</div>
-          <div className="lr-year">{cd.year}</div>
-          <div className="lr-genre">{cd.genre.join(" · ")}</div>
-          <div className="lr-rating">
-            {"★".repeat(cd.rating)}
-            <span style={{ color: "var(--ink-4)", opacity: 0.4 }}>{"★".repeat(5 - cd.rating)}</span>
-          </div>
-          <div className="lr-arrow" style={{ color: "var(--ink-3)" }}>
-            →
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

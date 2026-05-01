@@ -1,24 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import type { CD, ViewMode, AppMode } from "./types/cd";
-import { SEED_CDS } from "./data/seed";
+import type { Album, AlbumCreate, ViewMode, AppMode } from "./types/album";
+import { albumsApi } from "./api/album";
 import { Stats } from "./components/Stats";
 import { Carousel, GridView, ListView } from "./components/views";
 import { Detail, AddNew, fmtDate } from "./components/Detail";
 
-const STORAGE_KEY = "spincd-data-v2";
-
-function loadCds(): CD[] {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) return JSON.parse(stored) as CD[];
-  } catch {
-    // ignore
-  }
-  return SEED_CDS;
-}
-
 function App() {
-  const [cds, setCds] = useState<CD[]>(loadCds);
+  const [cds, setCds] = useState<Album[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const [view, setView] = useState<ViewMode>("carousel");
   const [query, setQuery] = useState("");
   const [genreFilter, setGenreFilter] = useState<string | null>(null);
@@ -29,12 +19,21 @@ function App() {
   const [statsOpen, setStatsOpen] = useState(false);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(cds));
-    } catch {
-      // ignore
-    }
-  }, [cds]);
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await albumsApi.getAll();
+        if (!cancelled) setCds(data);
+      } catch (e) {
+        if (!cancelled) setLoadError(e instanceof Error ? e.message : String(e));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const allGenres = useMemo(() => {
     const s = new Set<string>();
@@ -62,12 +61,33 @@ function App() {
 
   const openCd = filtered.find(c => c.id === openId) || cds.find(c => c.id === openId);
 
-  const saveCd = (updated: CD) =>
-    setCds(prev => prev.map(c => (c.id === updated.id ? updated : c)));
-  const addCd = (newCd: CD) => setCds(prev => [newCd, ...prev]);
-  const deleteCd = (id: number) => {
-    setCds(prev => prev.filter(c => c.id !== id));
-    setOpenId(null);
+  const saveCd = async (updated: Album) => {
+    try {
+      const { id, ...patch } = updated;
+      const saved = await albumsApi.update(id, patch);
+      setCds(prev => prev.map(c => (c.id === saved.id ? saved : c)));
+    } catch (e) {
+      alert(`Save failed: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  };
+
+  const addCd = async (newCd: AlbumCreate) => {
+    try {
+      const created = await albumsApi.create(newCd);
+      setCds(prev => [created, ...prev]);
+    } catch (e) {
+      alert(`Add failed: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  };
+
+  const deleteCd = async (id: number) => {
+    try {
+      await albumsApi.delete(id);
+      setCds(prev => prev.filter(c => c.id !== id));
+      setOpenId(null);
+    } catch (e) {
+      alert(`Delete failed: ${e instanceof Error ? e.message : String(e)}`);
+    }
   };
 
   return (
@@ -169,7 +189,19 @@ function App() {
           ))}
         </div>
 
-        {view === "carousel" && (
+        {loading && (
+          <div style={{ textAlign: "center", padding: 80, color: "var(--ink-3)", fontFamily: "var(--mono)" }}>
+            loading registry…
+          </div>
+        )}
+        {!loading && loadError && (
+          <div style={{ textAlign: "center", padding: 80, color: "var(--aurora-red)", fontFamily: "var(--mono)" }}>
+            could not reach backend at localhost:8000<br />
+            <span style={{ color: "var(--ink-3)", fontSize: 11 }}>{loadError}</span>
+          </div>
+        )}
+
+        {!loading && !loadError && view === "carousel" && (
           <Carousel
             cds={filtered}
             index={carouselIdx}
@@ -177,8 +209,12 @@ function App() {
             onOpen={cd => setOpenId(cd.id)}
           />
         )}
-        {view === "grid" && <GridView cds={filtered} onOpen={cd => setOpenId(cd.id)} />}
-        {view === "list" && <ListView cds={filtered} onOpen={cd => setOpenId(cd.id)} />}
+        {!loading && !loadError && view === "grid" && (
+          <GridView cds={filtered} onOpen={cd => setOpenId(cd.id)} />
+        )}
+        {!loading && !loadError && view === "list" && (
+          <ListView cds={filtered} onOpen={cd => setOpenId(cd.id)} />
+        )}
 
         <div className="footer">
           <div>
@@ -210,7 +246,7 @@ function App() {
         <AddNew
           onClose={() => setAdding(false)}
           onAdd={addCd}
-          nextId={Math.max(0, ...cds.map(c => c.id)) + 1}
+          nextIdHint={Math.max(0, ...cds.map(c => c.id)) + 1}
         />
       )}
     </>

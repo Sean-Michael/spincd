@@ -1,24 +1,25 @@
 import { useEffect, useState } from "react";
-import type { CD, AppMode, Face } from "../types/cd";
+import type { Album, AlbumCreate, AppMode, Face } from "../types/album";
 import { FaceFlipper, ScanSlots, StarRating, TrackEditor } from "./atoms";
 
 function fmtDate(s: string | undefined | null): string {
   if (!s) return "—";
   const d = new Date(s);
+  if (isNaN(d.getTime())) return s;
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
 interface DetailProps {
-  cd: CD;
+  cd: Album;
   mode: AppMode;
   onClose: () => void;
-  onSave: (cd: CD) => void;
+  onSave: (cd: Album) => void;
   onDelete: (id: number) => void;
 }
 
 export function Detail({ cd, mode, onClose, onSave, onDelete }: DetailProps) {
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState<CD>(cd);
+  const [draft, setDraft] = useState<Album>(cd);
   const [face, setFace] = useState<Face>("front");
 
   useEffect(() => {
@@ -29,6 +30,7 @@ export function Detail({ cd, mode, onClose, onSave, onDelete }: DetailProps) {
 
   const isAdmin = mode === "admin";
   const live = editing ? draft : cd;
+  const rating = cd.rating ?? 0;
 
   return (
     <div className="detail-overlay" onClick={onClose}>
@@ -87,7 +89,7 @@ export function Detail({ cd, mode, onClose, onSave, onDelete }: DetailProps) {
                 <div className="detail-meta-row">
                   <div>
                     <div className="label">Year</div>
-                    <div className="value">{cd.year}</div>
+                    <div className="value">{cd.release_year ?? "—"}</div>
                   </div>
                   <div>
                     <div className="label">Tracks</div>
@@ -95,7 +97,7 @@ export function Detail({ cd, mode, onClose, onSave, onDelete }: DetailProps) {
                   </div>
                   <div>
                     <div className="label">Rating</div>
-                    <StarRating value={cd.rating} readonly size={14} />
+                    <StarRating value={rating} readonly size={14} />
                   </div>
                 </div>
                 <div className="detail-section">
@@ -144,8 +146,13 @@ export function Detail({ cd, mode, onClose, onSave, onDelete }: DetailProps) {
                     <label>Year</label>
                     <input
                       type="number"
-                      value={draft.year}
-                      onChange={e => setDraft({ ...draft, year: +e.target.value })}
+                      value={draft.release_year ?? ""}
+                      onChange={e =>
+                        setDraft({
+                          ...draft,
+                          release_year: e.target.value === "" ? null : +e.target.value,
+                        })
+                      }
                     />
                   </div>
                 </div>
@@ -167,7 +174,7 @@ export function Detail({ cd, mode, onClose, onSave, onDelete }: DetailProps) {
                 <div className="field-group">
                   <label>Rating</label>
                   <StarRating
-                    value={draft.rating}
+                    value={draft.rating ?? 0}
                     onChange={n => setDraft({ ...draft, rating: n })}
                     size={20}
                   />
@@ -175,7 +182,7 @@ export function Detail({ cd, mode, onClose, onSave, onDelete }: DetailProps) {
                 <div className="field-group">
                   <label>Notes</label>
                   <textarea
-                    value={draft.notes}
+                    value={draft.notes ?? ""}
                     onChange={e => setDraft({ ...draft, notes: e.target.value })}
                   />
                 </div>
@@ -231,16 +238,16 @@ export function Detail({ cd, mode, onClose, onSave, onDelete }: DetailProps) {
 
 interface AddNewProps {
   onClose: () => void;
-  onAdd: (cd: CD) => void;
-  nextId: number;
+  onAdd: (cd: AlbumCreate) => void;
+  nextIdHint: number;
 }
 
-export function AddNew({ onClose, onAdd, nextId }: AddNewProps) {
-  const [draft, setDraft] = useState<CD>({
-    id: nextId,
+export function AddNew({ onClose, onAdd, nextIdHint }: AddNewProps) {
+  type Draft = Omit<Album, "id"> & { id?: number };
+  const [draft, setDraft] = useState<Draft>({
     artist: "",
     title: "",
-    year: new Date().getFullYear(),
+    release_year: new Date().getFullYear(),
     genre: [],
     hue: Math.floor(Math.random() * 360),
     accent: "#5E8CA8",
@@ -248,17 +255,27 @@ export function AddNew({ onClose, onAdd, nextId }: AddNewProps) {
     rating: 0,
     notes: "",
     tracks: [""],
-    scanFront: null,
-    scanBack: null,
-    scanDisc: null,
+    scan_front: null,
+    scan_back: null,
+    scan_disc: null,
+    label: null,
   });
+
+  const setDraftAlbum = (next: Album) => {
+    const { id: _id, ...rest } = next;
+    setDraft(rest);
+  };
 
   const submit = () => {
     if (!draft.title.trim() || !draft.artist.trim()) {
       alert("Title and artist are required.");
       return;
     }
-    onAdd({ ...draft, tracks: (draft.tracks || []).filter(Boolean) });
+    const payload: AlbumCreate = {
+      ...draft,
+      tracks: (draft.tracks || []).filter(Boolean),
+    };
+    onAdd(payload);
     onClose();
   };
 
@@ -269,7 +286,7 @@ export function AddNew({ onClose, onAdd, nextId }: AddNewProps) {
           ✕
         </button>
         <div className="detail-info-id">
-          NEW ENTRY · #<span className="accent">{String(nextId).padStart(3, "0")}</span>
+          NEW ENTRY · #<span className="accent">{String(nextIdHint).padStart(3, "0")}</span>
         </div>
         <h1 className="detail-title">Add a CD</h1>
         <div className="detail-artist">to your registry</div>
@@ -278,7 +295,7 @@ export function AddNew({ onClose, onAdd, nextId }: AddNewProps) {
             <div className="detail-section-title" style={{ marginTop: 0 }}>
               Scans
             </div>
-            <ScanSlots cd={draft} onChange={setDraft} />
+            <ScanSlots cd={{ ...draft, id: nextIdHint } as Album} onChange={setDraftAlbum} />
             <div
               style={{
                 fontFamily: "var(--mono)",
@@ -309,7 +326,7 @@ export function AddNew({ onClose, onAdd, nextId }: AddNewProps) {
                 type="range"
                 min="0"
                 max="360"
-                value={draft.hue}
+                value={draft.hue ?? 200}
                 style={{ width: "100%" }}
                 onChange={e => setDraft({ ...draft, hue: +e.target.value })}
               />
@@ -329,8 +346,13 @@ export function AddNew({ onClose, onAdd, nextId }: AddNewProps) {
                 <label>Year</label>
                 <input
                   type="number"
-                  value={draft.year}
-                  onChange={e => setDraft({ ...draft, year: +e.target.value })}
+                  value={draft.release_year ?? ""}
+                  onChange={e =>
+                    setDraft({
+                      ...draft,
+                      release_year: e.target.value === "" ? null : +e.target.value,
+                    })
+                  }
                 />
               </div>
             </div>
@@ -360,7 +382,7 @@ export function AddNew({ onClose, onAdd, nextId }: AddNewProps) {
             <div className="field-group">
               <label>Rating</label>
               <StarRating
-                value={draft.rating}
+                value={draft.rating ?? 0}
                 onChange={n => setDraft({ ...draft, rating: n })}
                 size={22}
               />

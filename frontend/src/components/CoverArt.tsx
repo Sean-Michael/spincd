@@ -1,14 +1,14 @@
-import type { CD, Face } from "../types/cd";
+import type { Album, Face } from "../types/album";
 
 interface CoverArtProps {
-  cd: CD;
+  cd: Album;
   size?: number;
   face?: Face;
 }
 
 export function CoverArt({ cd, face = "front" }: CoverArtProps) {
-  const scanKey: keyof CD = face === "back" ? "scanBack" : "scanFront";
-  const scanUrl = cd[scanKey] as string | null;
+  const scanKey = face === "back" ? "scan_back" : "scan_front";
+  const scanUrl = cd[scanKey];
   if (scanUrl) {
     return (
       <img
@@ -20,6 +20,7 @@ export function CoverArt({ cd, face = "front" }: CoverArtProps) {
   }
 
   const hue = cd.hue ?? 200;
+  const accent = cd.accent ?? "#5E8CA8";
   const id = `cv-${cd.id}-${face}`;
   const initials = (cd.title || "")
     .split(/\s+/)
@@ -55,34 +56,34 @@ export function CoverArt({ cd, face = "front" }: CoverArtProps) {
       </g>
       <rect x="0" y="0" width="300" height="300" fill={`url(#${id}-grain)`} />
       {!isBack && cd.id % 4 === 0 && (
-        <g opacity="0.55" stroke={cd.accent} fill="none" strokeWidth="1.4">
+        <g opacity="0.55" stroke={accent} fill="none" strokeWidth="1.4">
           <circle cx="150" cy="150" r="40" />
           <circle cx="150" cy="150" r="60" />
           <circle cx="150" cy="150" r="80" />
         </g>
       )}
       {!isBack && cd.id % 4 === 1 && (
-        <g opacity="0.6" fill={cd.accent}>
+        <g opacity="0.6" fill={accent}>
           <rect x="60" y="220" width="180" height="2" />
           <rect x="60" y="60" width="2" height="160" />
         </g>
       )}
       {!isBack && cd.id % 4 === 2 && (
-        <g opacity="0.6" stroke={cd.accent} fill="none" strokeWidth="1.4">
+        <g opacity="0.6" stroke={accent} fill="none" strokeWidth="1.4">
           <path d="M 40 200 Q 150 80 260 200" />
           <path d="M 40 220 Q 150 100 260 220" opacity="0.6" />
           <path d="M 40 240 Q 150 120 260 240" opacity="0.4" />
         </g>
       )}
       {!isBack && cd.id % 4 === 3 && (
-        <g opacity="0.55" stroke={cd.accent} fill="none" strokeWidth="1.4">
+        <g opacity="0.55" stroke={accent} fill="none" strokeWidth="1.4">
           <polygon points="150,70 230,210 70,210" />
           <line x1="150" y1="70" x2="150" y2="210" />
         </g>
       )}
       <g fontFamily="'JetBrains Mono', monospace" fill="#1B2434">
         <text x="22" y="40" fontSize="10" letterSpacing="2" opacity="0.6">
-          {String(cd.id).padStart(3, "0")} · {cd.year}
+          {String(cd.id).padStart(3, "0")} · {cd.release_year ?? "—"}
         </text>
       </g>
       <g fontFamily="'Instrument Serif', serif" fill="#1B2434">
@@ -101,7 +102,7 @@ export function CoverArt({ cd, face = "front" }: CoverArtProps) {
         textAnchor="end"
         fontFamily="'Instrument Serif', serif"
         fontSize="86"
-        fill={cd.accent}
+        fill={accent}
         opacity={isBack ? 0.1 : 0.22}
         fontStyle="italic"
       >
@@ -129,7 +130,7 @@ export function CoverArt({ cd, face = "front" }: CoverArtProps) {
             opacity="0.7"
             letterSpacing="1.5"
           >
-            {String(cd.year)}-{String(cd.id).padStart(4, "0")}
+            {cd.release_year ?? "----"}-{String(cd.id).padStart(4, "0")}
           </text>
           <g
             fontFamily="'JetBrains Mono',monospace"
@@ -156,12 +157,13 @@ export function CoverArt({ cd, face = "front" }: CoverArtProps) {
 }
 
 interface DiscProps {
-  cd: CD;
+  cd: Album;
   size?: number;
 }
 
 export function Disc({ cd, size = 240 }: DiscProps) {
   const hue = cd.hue ?? 200;
+  const accent = cd.accent ?? "#5E8CA8";
   return (
     <div className="disc" style={{ width: size, height: size }}>
       <svg viewBox="0 0 240 240" width={size} height={size} style={{ display: "block" }}>
@@ -198,9 +200,9 @@ export function Disc({ cd, size = 240 }: DiscProps) {
             strokeWidth="0.5"
           />
         ))}
-        <circle cx="120" cy="120" r="42" fill={cd.accent} fillOpacity="0.25" />
+        <circle cx="120" cy="120" r="42" fill={accent} fillOpacity="0.25" />
         <circle cx="120" cy="120" r="42" fill="#fff" fillOpacity="0.85" />
-        <circle cx="120" cy="120" r="42" fill="none" stroke={cd.accent} strokeOpacity="0.4" />
+        <circle cx="120" cy="120" r="42" fill="none" stroke={accent} strokeOpacity="0.4" />
         <text
           x="120"
           y="115"

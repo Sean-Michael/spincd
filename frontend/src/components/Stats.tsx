@@ -1,8 +1,8 @@
 import { useMemo } from "react";
-import type { CD } from "../types/cd";
+import type { Album } from "../types/album";
 
 interface StatsProps {
-  cds: CD[];
+  cds: Album[];
 }
 
 export function Stats({ cds }: StatsProps) {
@@ -17,17 +17,20 @@ export function Stats({ cds }: StatsProps) {
   const decades = useMemo(() => {
     const m: Record<string, number> = {};
     cds.forEach(c => {
-      const d = Math.floor(c.year / 10) * 10;
+      if (c.release_year == null) return;
+      const d = Math.floor(c.release_year / 10) * 10;
       m[d] = (m[d] || 0) + 1;
     });
     return Object.entries(m).sort((a, b) => Number(a[0]) - Number(b[0]));
   }, [cds]);
 
   const maxDecade = Math.max(1, ...decades.map(([, n]) => n));
-  const avgRating = total
-    ? (cds.reduce((s, c) => s + (c.rating || 0), 0) / total).toFixed(1)
+  const rated = cds.filter(c => c.rating != null);
+  const avgRating = rated.length
+    ? (rated.reduce((s, c) => s + (c.rating ?? 0), 0) / rated.length).toFixed(1)
     : "—";
-  const oldestYear = total ? Math.min(...cds.map(c => c.year)) : new Date().getFullYear();
+  const years = cds.map(c => c.release_year).filter((y): y is number => y != null);
+  const oldestYear = years.length ? Math.min(...years) : new Date().getFullYear();
   const yearSpan = new Date().getFullYear() - oldestYear;
 
   return (

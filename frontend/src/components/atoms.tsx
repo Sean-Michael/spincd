@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import type { CD, Face } from "../types/cd";
+import type { Album, Face } from "../types/album";
 import { CoverArt, Disc } from "./CoverArt";
 
 interface StarRatingProps {
@@ -119,18 +119,20 @@ export function TrackEditor({ tracks, onChange }: TrackEditorProps) {
 }
 
 interface ScanSlotsProps {
-  cd: CD;
-  onChange: (cd: CD) => void;
+  cd: Album;
+  onChange: (cd: Album) => void;
 }
 
+type ScanKey = "scan_front" | "scan_back" | "scan_disc";
+
 export function ScanSlots({ cd, onChange }: ScanSlotsProps) {
-  const onPick = async (key: "scanFront" | "scanBack" | "scanDisc", file: File | undefined) => {
+  const onPick = async (key: ScanKey, file: File | undefined) => {
     if (!file) return;
     const url = await fileToDataURL(file);
     onChange({ ...cd, [key]: url });
   };
 
-  const slot = (key: "scanFront" | "scanBack" | "scanDisc", label: string) => {
+  const slot = (key: ScanKey, label: string) => {
     const value = cd[key];
     return (
       <label className={"scan-slot " + (value ? "has-img" : "")}>
@@ -168,15 +170,15 @@ export function ScanSlots({ cd, onChange }: ScanSlotsProps) {
 
   return (
     <div className="scan-uploader">
-      {slot("scanFront", "Front")}
-      {slot("scanBack", "Back")}
-      {slot("scanDisc", "Disc")}
+      {slot("scan_front", "Front")}
+      {slot("scan_back", "Back")}
+      {slot("scan_disc", "Disc")}
     </div>
   );
 }
 
 interface FaceFlipperProps {
-  cd: CD;
+  cd: Album;
   face: Face;
 }
 
@@ -190,9 +192,9 @@ export function FaceFlipper({ cd, face }: FaceFlipperProps) {
         <CoverArt cd={cd} face="back" />
       </div>
       <div className="face face-disc">
-        {cd.scanDisc ? (
+        {cd.scan_disc ? (
           <img
-            src={cd.scanDisc}
+            src={cd.scan_disc}
             alt="disc"
             style={{ width: "100%", height: "100%", objectFit: "contain", borderRadius: "50%" }}
           />
