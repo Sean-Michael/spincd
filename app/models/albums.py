@@ -1,4 +1,5 @@
 from sqlmodel import SQLModel, Field
+from sqlalchemy import Column, JSON
 
 
 class AlbumBase(SQLModel):
@@ -7,7 +8,16 @@ class AlbumBase(SQLModel):
     title: str
     artist: str = Field(index=True)  # Create an index for fast Artist lookups
     release_year: int | None = None
-    genre: str | None = None
+    genre: list[str] = Field(default_factory=list, sa_column=Column(JSON))
+    tracks: list[str] = Field(default_factory=list, sa_column=Column(JSON))
+    notes: str | None = None
+    rating: int | None = None
+    hue: int | None = None
+    accent: str | None = None
+    added: str | None = None
+    scan_front: str | None = None
+    scan_back: str | None = None
+    scan_disc: str | None = None
     label: str | None = None
 
 
@@ -35,5 +45,14 @@ class AlbumUpdate(SQLModel):
     title: str | None = None
     artist: str | None = None
     release_year: int | None = None
-    genre: str | None = None
+    genre: list[str] | None = None
+    tracks: list[str] | None = None
+    notes: str | None = None
+    rating: int | None = None
+    hue: int | None = None
+    accent: str | None = None
+    added: str | None = None
+    scan_front: str | None = None
+    scan_back: str | None = None
+    scan_disc: str | None = None
     label: str | None = None
