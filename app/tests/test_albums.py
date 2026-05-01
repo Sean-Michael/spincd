@@ -179,7 +179,7 @@ def test_update_album_by_id(session: Session, client: TestClient):
         title="Sgt. Pepper's",
         artist="The Beatles",
         release_year=1967,
-        genre="Rock",
+        genre=["Rock"],
         label="Parlophone",
     )
     session.add(album)
@@ -187,11 +187,12 @@ def test_update_album_by_id(session: Session, client: TestClient):
 
     response = client.patch(
         f"/albums/{album.id}",
-        json={"genre": "Psychedelic Rock"},
+        json={"genre": ["Psychedelic Rock"], "rating": 5},
     )
     data = response.json()
     assert response.status_code == 200
-    assert data["genre"] == "Psychedelic Rock"
+    assert data["genre"] == ["Psychedelic Rock"]
+    assert data["rating"] == 5
     # Untouched fields should be unchanged
     assert data["title"] == "Sgt. Pepper's"
     assert data["artist"] == "The Beatles"
@@ -202,7 +203,7 @@ def test_update_album_by_id(session: Session, client: TestClient):
 
 def test_update_album_by_id_not_found(client: TestClient):
     """Patching an album that doesn't exist should return a 404"""
-    response = client.patch("/albums/69", json={"genre": "Jazz"})
+    response = client.patch("/albums/69", json={"genre": ["Jazz"]})
     assert response.status_code == 404
     assert response.json() == {"detail": "Album not found"}
 
