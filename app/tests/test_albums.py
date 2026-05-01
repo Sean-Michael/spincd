@@ -43,7 +43,13 @@ def test_create_album(client: TestClient):
             "title": "Kid A",
             "artist": "Radiohead",
             "release_year": 2000,
-            "genre": "Art Rock",
+            "genre": ["Art Rock", "Electronic"],
+            "tracks": ["Everything in Its Right Place", "Kid A"],
+            "notes": "Still feels like the future.",
+            "rating": 5,
+            "hue": 220,
+            "accent": "#5E81AC",
+            "added": "2023-11-20",
             "label": "Parlophone",
         },
     )
@@ -52,8 +58,17 @@ def test_create_album(client: TestClient):
     assert data["title"] == "Kid A"
     assert data["artist"] == "Radiohead"
     assert data["release_year"] == 2000
-    assert data["genre"] == "Art Rock"
+    assert data["genre"] == ["Art Rock", "Electronic"]
+    assert data["tracks"] == ["Everything in Its Right Place", "Kid A"]
+    assert data["notes"] == "Still feels like the future."
+    assert data["rating"] == 5
+    assert data["hue"] == 220
+    assert data["accent"] == "#5E81AC"
+    assert data["added"] == "2023-11-20"
     assert data["label"] == "Parlophone"
+    assert data["scan_front"] is None
+    assert data["scan_back"] is None
+    assert data["scan_disc"] is None
     assert data["id"] is not None
 
 
@@ -128,7 +143,7 @@ def test_replace_album_by_id(session: Session, client: TestClient):
             "title": "Bleach",
             "artist": "Nirvana",
             "release_year": 1989,
-            "genre": "Grunge",
+            "genre": ["Grunge"],
             "label": "Sub Pop",
         },
     )
@@ -137,7 +152,7 @@ def test_replace_album_by_id(session: Session, client: TestClient):
     assert data["title"] == "Bleach"
     assert data["artist"] == "Nirvana"
     assert data["release_year"] == 1989
-    assert data["genre"] == "Grunge"
+    assert data["genre"] == ["Grunge"]
     assert data["label"] == "Sub Pop"
 
 
