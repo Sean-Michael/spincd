@@ -164,7 +164,7 @@ def test_replace_album_by_id_not_found(client: TestClient):
             "title": "Bleach",
             "artist": "Nirvana",
             "release_year": 1989,
-            "genre": "Grunge",
+            "genre": ["Grunge"],
             "label": "Sub Pop",
         },
     )
