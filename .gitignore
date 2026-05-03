@@ -2,3 +2,5 @@ notes/
 __pycache__
 .venv
 spincd.db
+.claude
+CLAUDE.md
