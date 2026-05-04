@@ -1,0 +1,29 @@
+name: spincd
+
+services:
+  spincd:
+    image: ${DOCKER_IMAGE}
+    container_name: spincd
+    restart: unless-stopped
+    expose:
+      - "8000"
+    environment:
+      - ALLOW_ORIGINS=https://cds.sean-michael.dev
+      - SQLITE_FILE_NAME=/data/spincd.db
+    volumes:
+      - spincd-data:/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.spincd.rule=Host(`cds.sean-michael.dev`)"
+      - "traefik.http.routers.spincd.entrypoints=websecure"
+      - "traefik.http.routers.spincd.tls.certresolver=letsencrypt"
+      - "traefik.http.services.spincd.loadbalancer.server.port=8000"
+    networks:
+      - traefik-public
+
+volumes:
+  spincd-data:
+
+networks:
+  traefik-public:
+    external: true
