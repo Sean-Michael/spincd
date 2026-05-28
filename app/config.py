@@ -14,6 +14,11 @@ class Settings(BaseSettings):
     sqlite_file_name: str = "spincd.db"
     database_url: str | None = None
 
+    # SCANS
+    # Base URL for processed scan images. Empty -> served locally at /scans
+    # (scans/processed mounted by main.py). Set to an S3/CDN base in production.
+    scan_base_url: str = ""
+
     # ORIGINS
     allow_origins: list[str] = ["http://localhost:5173"]
     allow_methods: list[str] = ["*"]

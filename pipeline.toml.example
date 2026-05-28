@@ -1,0 +1,28 @@
+# pipeline.toml — copy to pipeline.toml and edit as needed (gitignored)
+
+[pipeline]
+# Where you drop raw scanner JPGs
+scan_dir = "scans/raw"
+
+# Where processed (deskewed/cropped/squared) images are written
+processed_dir = "scans/processed"
+
+# spinCD API base URL
+spincd_api_url = "http://localhost:8000"
+
+# Output cover size in pixels (square). 1417px = 4.72" @ 300dpi (CD standard)
+cover_size = 1417
+
+# Manual orientation overrides applied after auto-deskew, as a JSON file:
+#   { "slug": { "front": 90, "back": 90, "disc": 90 } }   (degrees clockwise)
+rotations_file = "scans/rotations.json"
+
+[s3]
+# Target bucket for `pipeline upload` (created by infrastructure/ Terraform).
+bucket = "spincd-content"
+prefix = "scans"
+region = "us-west-2"
+
+# After uploading, set this on the app so it serves scans from S3 instead of
+# the local /scans mount:
+#   SCAN_BASE_URL = "https://spincd-content.s3.us-west-2.amazonaws.com/scans"

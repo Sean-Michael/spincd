@@ -10,6 +10,8 @@ services:
     environment:
       - ALLOW_ORIGINS=https://cds.sean-michael.dev
       - SQLITE_FILE_NAME=/data/spincd.db
+      # Scan images served from S3 (see infrastructure/ Terraform).
+      - SCAN_BASE_URL=${SCAN_BASE_URL:-https://spincd-content.s3.us-west-2.amazonaws.com/scans}
     volumes:
       - spincd-data:/data
     labels:

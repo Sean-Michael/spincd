@@ -53,6 +53,11 @@ app.add_middleware(
 # /albums
 app.include_router(albums.router)
 
+# Serve processed scan images locally when no external (S3/CDN) base URL is set.
+_SCANS = os.path.join(os.path.dirname(__file__), "..", "scans", "processed")
+if not settings.scan_base_url and os.path.isdir(_SCANS):
+    app.mount("/scans", StaticFiles(directory=_SCANS), name="scans")
+
 _DIST = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
 
 if os.path.isdir(_DIST):

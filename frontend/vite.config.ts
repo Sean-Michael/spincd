@@ -7,6 +7,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/albums': 'http://127.0.0.1:8000',
+      '/scans': 'http://127.0.0.1:8000',
     },
   },
 })
