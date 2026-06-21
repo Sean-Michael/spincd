@@ -1,0 +1,26 @@
+name: spincd-dev
+
+# Local single-container run: builds the same image used in prod, serves
+# frontend + API together on http://localhost:8000.
+#
+# Usage:
+#   docker compose -f docker-compose.dev.yaml up --build
+#
+# To use local scan images instead of S3, unset SCAN_BASE_URL and uncomment
+# the ./scans/processed bind mount below.
+
+services:
+  spincd:
+    build: .
+    container_name: spincd-dev
+    ports:
+      - "8000:8000"
+    environment:
+      - SQLITE_FILE_NAME=/data/spincd.db
+      - SCAN_BASE_URL=${SCAN_BASE_URL:-https://spincd-content.s3.us-west-2.amazonaws.com/scans}
+    volumes:
+      - spincd-dev-data:/data
+      # - ./scans/processed:/code/scans/processed:ro
+
+volumes:
+  spincd-dev-data:

@@ -13,16 +13,17 @@ WORKDIR /code
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
 
-COPY pyproject.toml uv.lock ./
+COPY pyproject.toml uv.lock README.md ./
 RUN uv sync --frozen --no-dev --no-cache
 
 COPY app/ app/
 COPY --from=frontend-builder /build/dist/ frontend/dist/
 
-RUN useradd --create-home appuser
+RUN useradd --create-home appuser && mkdir -p /data && chown -R appuser:appuser /code /data
 USER appuser
 
+ENV PATH="/code/.venv/bin:$PATH"
 ENV PORT=8000
 EXPOSE ${PORT}
 
-CMD ["sh", "-c", "uv run uvicorn app.main:app --host 0.0.0.0 --port ${PORT}"]
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT}"]
