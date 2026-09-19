@@ -13,3 +13,8 @@ pipeline.toml
 infrastructure/.terraform/
 infrastructure/*.tfstate
 infrastructure/*.tfstate.backup
+
+# macOS app
+macos/.build/
+macos/dist/
+macos/.swiftpm/
